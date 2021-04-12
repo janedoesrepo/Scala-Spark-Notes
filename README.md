@@ -5,24 +5,25 @@ Notes on the course [Big Data Analysis with Scala and Spark](https://www.courser
 
 ### Prerequisites
 
-- Download java: https://java.com/en/download/.
-- Download Spark: https://spark.apache.org/downloads.html
-- Download Hadoop: https://github.com/cdarlint/winutils
+- Download and install:
+    - Java: https://java.com/en/download/.
+    - Spark: https://spark.apache.org/downloads.html
+    - Hadoop: https://github.com/cdarlint/winutils
 
 
 - Set evironment variables
- - SPARK_HOME = \<path-to-spark-folder>, e.g. SPARK_HOME = "C:\spark-3.1.1-bin-hadoop2.7"
- - HADOOP_HOME = \<path-to-hadoop-folder>, e.g. HADOOP HOME = "C:\hadoop\hadoop-2.7.7"
+    - SPARK_HOME = \<path-to-spark-folder>, e.g. SPARK_HOME = "C:\spark-3.1.1-bin-hadoop2.7"
+    - HADOOP_HOME = \<path-to-hadoop-folder>, e.g. HADOOP HOME = "C:\hadoop\hadoop-2.7.7"
  
  
 - Add to PATH
- - %SPARK_HOME%\bin
- - %HADOOP_HOME%\bin
+    - %SPARK_HOME%\bin
+    - %HADOOP_HOME%\bin
 
 ### Scala and Spark for Jupyter Notebook
 https://github.com/mariusvniekerk/spylon-kernel
 
-- **Install spylon-kernel**
+**Install spylon-kernel**
 
 ```
 pip install spylon-kernel
@@ -30,7 +31,7 @@ pip install spylon-kernel
 conda install -c conda-forge spylon-kernel
 ```
 
-- **Create a Scala Kernel**
+**Create a Scala Kernel**
 
 ```
 python -m spylon_kernel install
@@ -462,7 +463,7 @@ Taken together, Catalyst and Tungsten offer ways to significantly speed up your 
 
 #### Limitations
 
-**DataFrames are untyped**. Your code compiles, but you get runtime exceptions when you attempt to run a query on a column that doesn't exist. It would be nice if this wwas caught at compile time like we're used to in Scala.
+**DataFrames are untyped**. Your code compiles, but you get runtime exceptions when you attempt to run a query on a column that doesn't exist. It would be nice if this was caught at compile time like we're used to in Scala.
 
 **Limited Data Types**. If your data can't be expressed by <code>case classes</code> and standard Spark SQL data types, it may be difficult to ensure that a Tungsten encoder exists for your data type.
 
@@ -538,10 +539,30 @@ val keyValues = List((3,"Me"), (1,"Thi"), (2,"Se"), (3,"ssa"), (1,"sIsA"), (3,"g
 import spark.implicits._
 val keyValuesDS = keyValues.toDS
 
-keyValuesDs.groupByKey(p => p._1)
+keyValuesDS.groupByKey(p => p._1)
            .mapGroups((k, vs) => (k, vs.foldLeft("")((acc, p) => acc + p._2)))
            .sort($"_1").show()
 ```
+
+    +---+----------+
+    | _1|        _2|
+    +---+----------+
+    |  1|   ThisIsA|
+    |  2|    Secret|
+    |  3|Message:-)|
+    +---+----------+
+    
+    
+
+
+
+
+    keyValues: List[(Int, String)] = List((3,Me), (1,Thi), (2,Se), (3,ssa), (1,sIsA), (3,ge:), (3,-)), (2,cre), (2,t))
+    import spark.implicits._
+    keyValuesDS: org.apache.spark.sql.Dataset[(Int, String)] = [_1: int, _2: string]
+
+
+
 
 **The only issue with this approach is this disclaimer in the API docs for mapGroups:**
 This function does not support partial aggregation, and as a result requires shuffling all the data in the Dataset. If an application intends to perform an aggregation over each key *(which is exactly what we're doing)*, it is best to use the reduce function or an org.apache.spark.sql.expressions#Aggregator.
@@ -553,11 +574,31 @@ val keyValues = List((3,"Me"), (1,"Thi"), (2,"Se"), (3,"ssa"), (1,"sIsA"), (3,"g
 import spark.implicits._
 val keyValuesDS = keyValues.toDS
 
-keyValuesDs.groupByKey(p => p._1)
+keyValuesDS.groupByKey(p => p._1)
            .mapValues(p => p._2)
            .reduceGroups((acc, str) => acc + str)  
            .sort($"key").show()
 ```
+
+    +---+----------------------------------+
+    |key|ReduceAggregator(java.lang.String)|
+    +---+----------------------------------+
+    |  1|                           ThisIsA|
+    |  2|                            Secret|
+    |  3|                        Message:-)|
+    +---+----------------------------------+
+    
+    
+
+
+
+
+    keyValues: List[(Int, String)] = List((3,Me), (1,Thi), (2,Se), (3,ssa), (1,sIsA), (3,ge:), (3,-)), (2,cre), (2,t))
+    import spark.implicits._
+    keyValuesDS: org.apache.spark.sql.Dataset[(Int, String)] = [_1: int, _2: string]
+
+
+
 
 **That works, but the docs also suggested an Aggregator!**
 
@@ -594,6 +635,30 @@ val strConcat = new Aggregator[(Int, String), String, String] {
 keyValuesDS.groupByKey(pair => pair._1)
            .agg(strConcat.as[String])
 ```
+
+
+    <console>:49: error: object creation impossible, since:
+
+    it has 2 unimplemented members.
+
+    /** As seen from <$anon: org.apache.spark.sql.expressions.Aggregator[(Int, String),String,String]>, the missing signatures are as follows.
+
+     *  For convenience, these are usable as stub implementations.
+
+     */
+
+      def bufferEncoder: org.apache.spark.sql.Encoder[String] = ???
+
+      def outputEncoder: org.apache.spark.sql.Encoder[String] = ???
+
+    
+
+           val strConcat = new Aggregator[(Int, String), String, String] {
+
+                               ^
+
+    
+
 
 **We are missing two method implementations. What's an Encoder?**
 
@@ -646,6 +711,29 @@ keyValuesDS.groupByKey(pair => pair._1)
            .sort($"key").show()
 ```
 
+    +---+---------------------+
+    |key|$anon$1(scala.Tuple2)|
+    +---+---------------------+
+    |  1|              ThisIsA|
+    |  2|               Secret|
+    |  3|           Message:-)|
+    +---+---------------------+
+    
+    
+
+
+
+
+    keyValues: List[(Int, String)] = List((3,Me), (1,Thi), (2,Se), (3,ssa), (1,sIsA), (3,ge:), (3,-)), (2,cre), (2,t))
+    import spark.implicits._
+    keyValuesDS: org.apache.spark.sql.Dataset[(Int, String)] = [_1: int, _2: string]
+    import org.apache.spark.sql.expressions.Aggregator
+    import org.apache.spark.sql.{Encoder, Encoders}
+    strConcat: org.apache.spark.sql.TypedColumn[(Int, String),String] = $anon$1(staticinvoke(class org.apache.spark.unsafe.types.UTF8String, StringType, fromString, input[0, java.lang.String, true], true, false) AS `value`, input[0, string, true].toString, staticinvoke(class org.apache.spark.unsafe.types.UTF8String, StringType, fromString, input[0, java.lang.String, true], true, false))
+
+
+
+
 #### When to use Datasets over DataFrames over RDDs?
 
 **Use Datasets when...**
@@ -659,7 +747,7 @@ keyValuesDS.groupByKey(pair => pair._1)
  - you want the best possible performance, automatically optimzied for you
  
 **Use RDDs when...**
- - you have usntructured data
+ - you have unstructured data
  - you need to fine-tune and manage low-level details of RDD computations
  - you have complex data types that cannot be serialized with <code>Encoders</code>
 
