@@ -1,39 +1,45 @@
 # Scala Spark
 Notes on the course [Big Data Analysis with Scala and Spark](https://www.coursera.org/learn/scala-spark-big-data) by Heather Mills
 
+
+## Table of Contents
+1. [Installation](https://github.com/janedoesrepo/Scala-Spark-Notes#installation)
+2. [Resilient Distributed Datasets (RDDs)](https://github.com/janedoesrepo/Scala-Spark-Notes#resilient-distributed-datasets-rdds)
+3. [Spark SQL](https://github.com/janedoesrepo/Scala-Spark-Notes#spark-sql)
+
+
 ## Installation
 
-### Prerequisites
+### Setup on Windows
 
-- Download and install:
-    - Java: https://java.com/en/download/.
-    - Spark: https://spark.apache.org/downloads.html
-    - Hadoop: https://github.com/cdarlint/winutils
+#### Download and install
+- Java: https://java.com/en/download/.
+- Spark: https://spark.apache.org/downloads.html
+- Hadoop: https://github.com/cdarlint/winutils
 
-
-- Set evironment variables
-    - SPARK_HOME = \<path-to-spark-folder>, e.g. SPARK_HOME = "C:\spark-3.1.1-bin-hadoop2.7"
-    - HADOOP_HOME = \<path-to-hadoop-folder>, e.g. HADOOP HOME = "C:\hadoop\hadoop-2.7.7"
+#### Set environment variables
+- SPARK_HOME = \<path-to-spark-folder>, e.g. SPARK_HOME = "C:\spark-3.1.1-bin-hadoop2.7"
+- HADOOP_HOME = \<path-to-hadoop-folder>, e.g. HADOOP HOME = "C:\hadoop\hadoop-2.7.7"
  
- 
-- Add to PATH
-    - %SPARK_HOME%\bin
-    - %HADOOP_HOME%\bin
+#### Add to PATH
+- %SPARK_HOME%\bin
+- %HADOOP_HOME%\bin
+
 
 ### Scala and Spark for Jupyter Notebook
-https://github.com/mariusvniekerk/spylon-kernel
+ref: https://github.com/mariusvniekerk/spylon-kernel
 
-**Install spylon-kernel**
+#### Install spylon-kernel
 
-```
+```bash
 pip install spylon-kernel
 # or
 conda install -c conda-forge spylon-kernel
 ```
 
-**Create a Scala Kernel**
+#### Create a Scala Kernel
 
-```
+```bash
 python -m spylon_kernel install
 ```
 
@@ -41,22 +47,13 @@ python -m spylon_kernel install
 
 Open a jupyter notebook, select the spylon-kernel and execute some code:
 
-
 ```scala
 val x = 2
 ```
 
-
-
-
-    x: Int = 2
-
-
-
-
 If you see something like the following output, everything works fine:
 
-```Output
+```bash
 Intitializing Scala interpreter ...
 
 Spark Web UI available at http://<your-computer>.com:4040
@@ -224,10 +221,6 @@ aggregate(z: => B)(seqop: (B, A) => B, combop: (B, B) => B): B
 
 Spark doesn't even give you the option to use foldLeft/foldRight, which means that if you have to change the return type of your reduction operation, your only choice is to use aggregate.
 
-
-```scala
-
-```
 
 ## Spark SQL
 - allows seamless intermixing of SQL queries with Scala
@@ -768,8 +761,3 @@ keyValuesDS.groupByKey(pair => pair._1)
 3. **Limited Data Types**
 
 4. **Requires semi-structured/structured data**
-
-
-```scala
-
-```
